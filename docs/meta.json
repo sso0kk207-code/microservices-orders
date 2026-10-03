@@ -1,0 +1,18 @@
+{
+  "title": "Микросервисы: заказы и события",
+  "kind": "Микросервисы · Redis Streams · Outbox",
+  "tagline": "Три независимых сервиса и gateway, которые общаются событиями и переживают сбои друг друга",
+  "accent": "#fb923c",
+  "stack": ["Python 3.12", "FastAPI", "Redis Streams", "JWT", "SQLAlchemy 2", "httpx", "Docker Compose", "pytest"],
+  "features": [
+    "Своя БД у каждого сервиса, общение только событиями",
+    "Transactional outbox: событие не теряется при сбое",
+    "Идемпотентные потребители, повторы и DLQ",
+    "Gateway: маршрутизация, Request-ID, circuit breaker",
+    "JWT проверяется каждым сервисом самостоятельно"
+  ],
+  "metrics": [["4", "процесса"], ["DLQ", "ядовитые события"]],
+  "run": ["python", "scripts/dev.py", "--port", "{port}", "--fresh"],
+  "ready": "/health",
+  "demo_title": "python scripts/demo.py — запрос через gateway, события, сбой и DLQ"
+}

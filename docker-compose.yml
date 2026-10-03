@@ -1,0 +1,59 @@
+x-service: &service
+  build: .
+  restart: unless-stopped
+  environment: &env
+    REDIS_URL: redis://redis:6379/0
+    JWT_SECRET: ${JWT_SECRET:-dev-shared-secret-change-in-production-0123456789}
+  depends_on:
+    redis:
+      condition: service_healthy
+
+services:
+  gateway:
+    <<: *service
+    ports: ["8000:8000"]
+    environment:
+      AUTH_URL: http://auth:8000
+      ORDERS_URL: http://orders:8000
+      NOTIFICATIONS_URL: http://notifications:8000
+    depends_on: [auth, orders, notifications]
+
+  auth:
+    <<: *service
+    command: uvicorn services.auth.main:create_app --factory --host 0.0.0.0 --port 8000
+    environment:
+      <<: *env
+      DATABASE_URL: sqlite:////srv/data/auth.db      # у каждого сервиса своя БД; для PostgreSQL достаточно сменить URL
+    volumes: [auth-data:/srv/data]
+
+  orders:
+    <<: *service
+    command: uvicorn services.orders.main:create_app --factory --host 0.0.0.0 --port 8000
+    environment:
+      <<: *env
+      DATABASE_URL: sqlite:////srv/data/orders.db
+    volumes: [orders-data:/srv/data]
+
+  notifications:
+    <<: *service
+    command: uvicorn services.notifications.main:create_app --factory --host 0.0.0.0 --port 8000
+    environment:
+      <<: *env
+      DATABASE_URL: sqlite:////srv/data/notifications.db
+      ADMIN_KEY: ${ADMIN_KEY:-dev-admin-key}
+    volumes: [notifications-data:/srv/data]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes          # события переживают перезапуск Redis
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10
+
+volumes:
+  auth-data:
+  orders-data:
+  notifications-data:
+  redis-data:
